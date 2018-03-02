@@ -1,9 +1,13 @@
 import React from 'react'
-import Blog from './components/Blog'
-import Notification from './components/Notification'
+
 import blogService from './services/blogs'
 import loginService from './services/login'
 
+import Togglable from './components/Togglable'
+import BlogList from './components/BlogList'
+import Notification from './components/Notification'
+import LoginForm from './components/LoginForm'
+import CreateBlogForm from './components/CreateBlogForm'
 
 
 class App extends React.Component {
@@ -22,11 +26,11 @@ class App extends React.Component {
     }
   }
 
-  componentDidMount() {
-    blogService.getAll().then(blogs =>
-      this.setState({ blogs })
-    )
-
+  async componentDidMount() {
+    const blogs = await blogService.getAll()
+    const sortedBlogs = blogs.sort((a, b) => a.likes - b.likes)
+    this.setState({ blogs: sortedBlogs })
+    
     const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON)
@@ -84,88 +88,65 @@ class App extends React.Component {
     this.setState({ user: null })
   }
 
+  handleLikeButton = async (event) => {
+    event.preventDefault()
+    try {
+      const blogId = event.target.id;
+      const updatedBlog = await blogService.like({id: blogId})
+      const updatedBlogs = this.state.blogs.map(blog => {
+        return blog._id === blogId ? updatedBlog : blog
+      })
+      this.setState({blogs: updatedBlogs})
+      this.setNotification({ className: 'message', content: `Blog ${updatedBlog.title} liked (${updatedBlog.likes} likes)` })
+    } catch (exception){
+      this.setNotification({ className: 'error', content: 'Like failed' })
+    }
+  }
+
+  handleDeleteButton = async (event) => {
+    event.preventDefault()
+    console.log(event.target.id)
+    const blogId = event.target.id
+    const targetBlog = this.state.blogs.find(blog => blog._id === blogId)
+    if(window.confirm(`Delete ${targetBlog.title} by ${targetBlog.author}?`) === false) {
+      return
+    }
+    try {    
+      await blogService.destroy({id: blogId})
+      const updatedBlogs = this.state.blogs.filter(blog => blog._id !== blogId)
+      this.setState({blogs: updatedBlogs})
+      this.setNotification({ className: 'message', content: `Blog ${targetBlog.title} were destroyed` })
+    } catch (exception){
+      this.setNotification({ className: 'error', content: 'Deletion failed' })
+    }
+  }
+
   render() {
 
-    const loginForm = () => (
-      <div>
-        <h2>Login</h2>
+    const loginForm = () => <Togglable buttonLabel="Login">
+                              <LoginForm 
+                                handleSubmit={this.login}
+                                handleChange={this.handleFieldChange}
+                                username={this.state.username}
+                                password={this.state.password} />
+                            </Togglable>
 
-        <form onSubmit={this.login}>
-          <div>
-            Username: 
-            <input
-              type="text"
-              name="username"
-              value={this.state.username}
-              onChange={this.handleFieldChange}
-            />
-          </div>
-          <div>
-            Password: 
-            <input
-              type="password"
-              name="password"
-              value={this.state.password}
-              onChange={this.handleFieldChange}
-            />
-          </div>
-          <button type="submit">login</button>
-        </form>
-      </div>
-    )
-
-    const createBlogForm = () => (
-      <div>
-        <h2>Create New Blog</h2>
-
-        <form onSubmit={this.createBlog}>
-          <div>
-            Title: 
-            <input
-              type="text"
-              name="title"
-              value={this.state.title}
-              onChange={this.handleFieldChange}
-            />
-          </div>
-          <div>
-            Author: 
-            <input
-              type="text"
-              name="author"
-              value={this.state.author}
-              onChange={this.handleFieldChange}
-            />
-          </div>
-          <div>
-            URL:  
-            <input
-              type="text"
-              name="url"
-              value={this.state.url}
-              onChange={this.handleFieldChange}
-            />
-          </div>
-          <button type="submit">create</button>
-        </form>
-      </div>
-
-      )
+    const createBlogForm = () =>  <Togglable buttonLabel="Create new blog">
+                                    <CreateBlogForm 
+                                      handleSubmit={this.createBlog}
+                                      handleChange={this.handleFieldChange}
+                                      title={this.state.title}
+                                      author={this.state.author}
+                                      url={this.state.url} />
+                                  </Togglable>
 
     const loggedUserText = () => `User ${this.state.user.name} is logged in `
     const logoutButton = () => <button onClick={this.handleLogoutButton}>logout</button>
-    const blogList = () => {
-      const rows = this.state.blogs.map(blog => <Blog key={blog._id} blog={blog}/>)
-      return (
-        <div>
-          <table>
-          <tbody>
-            {rows}
-          </tbody>
-          </table>
-        </div>
-      )
-    }
+    
+    const blogList = () => <BlogList  blogs={this.state.blogs} 
+                                      user={this.state.user.name} 
+                                      likeHandler={this.handleLikeButton}
+                                      deleteHandler={this.handleDeleteButton} />
 
     const blogsHeader = () => <h1>Blogs</h1>
 
