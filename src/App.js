@@ -31,7 +31,7 @@ class App extends React.Component {
     const sortedBlogs = blogs.sort((a, b) => a.likes - b.likes)
     this.setState({ blogs: sortedBlogs })
     
-    const loggedUserJSON = window.localStorage.getItem('loggedBlogappUser')
+    const loggedUserJSON = window.localStorage.getItem('loggedBlogAppUser')
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON)
       this.setState({user})
@@ -48,7 +48,7 @@ class App extends React.Component {
       })
 
       blogService.setToken(user.token)
-      window.localStorage.setItem('loggedBlogappUser', JSON.stringify(user))
+      window.localStorage.setItem('loggedBlogAppUser', JSON.stringify(user))
       this.setState({ username: '', password: '', user})
       this.setNotification({ className: 'message', content: 'Logged in successfully' })
     } catch (exception) {
@@ -84,7 +84,7 @@ class App extends React.Component {
   }
 
   handleLogoutButton = (event) => {
-    window.localStorage.removeItem('loggedBlogappUser')
+    window.localStorage.removeItem('loggedBlogAppUser')
     this.setState({ user: null })
   }
 

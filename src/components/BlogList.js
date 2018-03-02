@@ -8,7 +8,7 @@ const BlogList = ({blogs, user, likeHandler, deleteHandler}) => {
     	return (
     		<tr key={blog._id}>
     			<td>
-		    		<TogglableBlog title={blog.title} ref={component => this.blog = component}>
+		    		<TogglableBlog title={blog.title}>
 		    			<Blog 	key={blog._id} 
 		    					blog={blog} 
 		    					user={user}
